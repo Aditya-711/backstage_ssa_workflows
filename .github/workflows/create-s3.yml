@@ -24,6 +24,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Print inputs
+        run: |
+           echo "🪣 Bucket Name: ${{ inputs.bucketName }}"
+           echo "🌍 Region: ${{ inputs.region }}"
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
