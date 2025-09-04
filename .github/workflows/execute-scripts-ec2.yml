@@ -10,6 +10,15 @@ on:
         description: 'The shell script content to execute on the EC2 instance'
         required: true
         type: string
+      script_type:
+        description: 'The shell script content type to execute on the EC2 instance'
+        required: false
+        type: string
+      region:
+        description: 'The region where the ec2 instance is located'
+        required: true
+        type: string
+        default: 'us-east-1'
 
 jobs:
   run-script-on-ec2:
@@ -20,7 +29,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: ${{inputs.region}}
 
       - name: Get EC2 Public IP
         id: get_ip
