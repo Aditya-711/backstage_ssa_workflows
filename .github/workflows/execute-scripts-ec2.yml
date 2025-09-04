@@ -1,0 +1,40 @@
+name: Execute Script on EC2
+
+on:
+  workflow_dispatch:
+    inputs:
+      instance_id:
+        description: 'The ID of the EC2 instance (e.g., i-0123456789abcdef)'
+        required: true
+      script_content:
+        description: 'The shell script content to execute on the EC2 instance'
+        required: true
+        type: string
+
+jobs:
+  run-script-on-ec2:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Get EC2 Public IP
+        id: get_ip
+        run: |
+          IP=$(aws ec2 describe-instances \
+            --instance-ids ${{ inputs.instance_id }} \
+            --query "Reservations[0].Instances[0].PublicIpAddress" \
+            --output text)
+          echo "ip=$IP" >> $GITHUB_OUTPUT
+
+      - name: Execute remote script
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ steps.get_ip.outputs.ip }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: ${{ inputs.script_content }}
