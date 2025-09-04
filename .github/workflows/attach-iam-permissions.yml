@@ -1,1 +1,106 @@
+name: Attach IAM Policy to User
 
+on:
+  workflow_dispatch:
+    inputs:
+      userName:
+        description: 'AWS IAM user name'
+        required: true
+        type: string
+      policyType:
+        description: 'Type of policy to attach'
+        required: true
+        type: choice
+        options:
+          - S3FullAccess
+          - S3ReadOnlyAccess
+          - EC2FullAccess
+          - EC2ReadOnlyAccess
+          - RDSFullAccess
+          - RDSReadOnlyAccess
+          - IAMReadOnlyAccess
+          - LambdaFullAccess
+          - CloudWatchReadOnlyAccess
+      region:
+        description: 'AWS region'
+        required: true
+        type: string
+        default: 'us-east-1'
+
+jobs:
+  attach-policy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ github.event.inputs.region }}
+
+      - name: Map policy type to AWS managed policy ARN
+        id: policy-mapping
+        run: |
+          case "${{ inputs.policyType }}" in
+            "S3FullAccess")
+              echo "policy_arn=arn:aws:iam::aws:policy/AmazonS3FullAccess" >> $GITHUB_OUTPUT
+              ;;
+            "S3ReadOnlyAccess")
+              echo "policy_arn=arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess" >> $GITHUB_OUTPUT
+              ;;
+            "EC2FullAccess")
+              echo "policy_arn=arn:aws:iam::aws:policy/AmazonEC2FullAccess" >> $GITHUB_OUTPUT
+              ;;
+            "EC2ReadOnlyAccess")
+              echo "policy_arn=arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess" >> $GITHUB_OUTPUT
+              ;;
+            "RDSFullAccess")
+              echo "policy_arn=arn:aws:iam::aws:policy/AmazonRDSFullAccess" >> $GITHUB_OUTPUT
+              ;;
+            "RDSReadOnlyAccess")
+              echo "policy_arn=arn:aws:iam::aws:policy/AmazonRDSReadOnlyAccess" >> $GITHUB_OUTPUT
+              ;;
+            "IAMReadOnlyAccess")
+              echo "policy_arn=arn:aws:iam::aws:policy/IAMReadOnlyAccess" >> $GITHUB_OUTPUT
+              ;;
+            "LambdaFullAccess")
+              echo "policy_arn=arn:aws:iam::aws:policy/AWSLambda_FullAccess" >> $GITHUB_OUTPUT
+              ;;
+            "CloudWatchReadOnlyAccess")
+              echo "policy_arn=arn:aws:iam::aws:policy/CloudWatchReadOnlyAccess" >> $GITHUB_OUTPUT
+              ;;
+            *)
+              echo "Unknown policy type: ${{ inputs.policyType }}"
+              exit 1
+              ;;
+          esac
+
+      - name: Check if user exists
+        run: |
+          if aws iam get-user --user-name ${{ inputs.userName }} > /dev/null 2>&1; then
+            echo "✅ User ${{ inputs.userName }} exists"
+          else
+            echo "❌ User ${{ inputs.userName }} does not exist"
+            exit 1
+          fi
+
+      - name: Attach policy to user
+        run: |
+          aws iam attach-user-policy \
+            --user-name ${{ inputs.userName }} \
+            --policy-arn ${{ steps.policy-mapping.outputs.policy_arn }}
+
+          echo "✅ Successfully attached ${{ inputs.policyType }} policy to user ${{ inputs.userName }}"
+          echo "Policy ARN: ${{ steps.policy-mapping.outputs.policy_arn }}"
+
+      - name: List user policies
+        run: |
+          echo "📋 Current policies attached to user ${{ inputs.userName }}:"
+          aws iam list-attached-user-policies --user-name ${{ inputs.userName }}
