@@ -1,0 +1,33 @@
+name: Provision EC2
+on: workflow_dispatch
+inputs:
+  instance_name:
+    description: 'Name of the EC2 instance'
+    required: true
+    type: string
+  instance_type:
+    description: 'Type of the EC2 instance'
+    required: true
+    type: string
+  region:
+    description: 'AWS Region'
+    required: true
+    type: string
+jobs:
+  provision-ec2:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Install AWS CLI
+        run: | 
+          sudo apt-get update
+          sudo apt-get install -y awscli
+      - name: Configure AWS Credentials
+        # Replace with your AWS credentials management strategy
+        run: aws configure set aws_access_key_id "YOUR_ACCESS_KEY"
+        run: aws configure set aws_secret_access_key "YOUR_SECRET_KEY"
+        run: aws configure set default.region ${{ inputs.region }}
+      - name: Launch EC2 instance
+        run: | 
+          aws ec2 run-instances \n            --image-id ami-0c55b31ad2299a701 \n            --instance-type ${{ inputs.instance_type }} \n            --count 1 \n            --key-name "YOUR_KEY_PAIR_NAME" \n            --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value="${{ inputs.instance_name }}"}]"
