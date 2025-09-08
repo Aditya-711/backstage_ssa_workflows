@@ -1,4 +1,4 @@
-name: Provision EC2
+name: AWS EC2 Provisioning
 on: workflow_dispatch
 inputs:
   instance_name:
@@ -28,6 +28,11 @@ jobs:
         run: aws configure set aws_access_key_id "YOUR_ACCESS_KEY"
         run: aws configure set aws_secret_access_key "YOUR_SECRET_KEY"
         run: aws configure set default.region ${{ inputs.region }}
-      - name: Launch EC2 instance
+      - name: Launch EC2 Instance
         run: | 
-          aws ec2 run-instances \n            --image-id ami-0c55b31ad2299a701 \n            --instance-type ${{ inputs.instance_type }} \n            --count 1 \n            --key-name "YOUR_KEY_PAIR_NAME" \n            --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value="${{ inputs.instance_name }}"}]"
+          aws ec2 run-instances \ 
+            --image-id ami-0c55b31ad2299a701 \ 
+            --instance-type ${{ inputs.instance_type }} \ 
+            --count 1 \ 
+            --key-name "YOUR_KEY_PAIR_NAME" \ 
+            --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value="${{ inputs.instance_name }}"}]"
