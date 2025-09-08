@@ -1,16 +1,14 @@
-name: Provision S3 Bucket
+name: Create S3 Bucket
 on: workflow_dispatch
 inputs:
-  bucketName:
+  bucket_name:
     description: 'Name of the S3 bucket'
     required: true
-    type: string
   region:
     description: 'AWS Region'
     required: true
-    type: string
 jobs:
-  create-s3-bucket:
+  create_bucket:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -23,9 +21,9 @@ jobs:
           aws-region: ${{ inputs.region }}
       - name: Create S3 Bucket
         run: | 
-          aws s3api create-bucket --bucket ${{ inputs.bucketName }} --region ${{ inputs.region }} --create-bucket-configuration LocationConstraint=${{ inputs.region }}
-          echo "S3 bucket '${{ inputs.bucketName }}' created successfully in region '${{ inputs.region }}'"
-      - name: Set bucket policy (optional - add your policy here)
+          aws s3api create-bucket --bucket ${{ inputs.bucket_name }} --region ${{ inputs.region }} --create-bucket-configuration LocationConstraint=${{ inputs.region }}
+          echo "S3 bucket '${{ inputs.bucket_name }}' created successfully in region '${{ inputs.region }}'"
+      - name: Set bucket policy (optional)
         run: | 
-          # aws s3api put-bucket-policy --bucket ${{ inputs.bucketName }} --policy file://policy.json
-          echo "Bucket policy (optional) not set"
+          # Add your bucket policy here if needed
+          # Example: aws s3api put-bucket-policy --bucket ${{ inputs.bucket_name }} --policy file://policy.json
