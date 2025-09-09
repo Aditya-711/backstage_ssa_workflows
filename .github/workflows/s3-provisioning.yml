@@ -1,0 +1,22 @@
+name: "S3 Provisioning Workflow"
+on:
+  workflow_dispatch:
+    inputs:
+      bucketName:
+        description: "Bucket name"
+        required: true
+        type: string
+      region:
+        description: "AWS Region"
+        required: true
+        type: string
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Provision S3 Bucket"
+        run: | 
+          echo "Provisioning S3 bucket ${{ inputs.bucketName }} in region ${{ inputs.region }}"
+          # Add your AWS CLI commands here to create the S3 bucket using ${{ inputs.bucketName }} and ${{ inputs.region }}
+          # Example (replace with your actual commands):
+          # aws s3api create-bucket --bucket ${{ inputs.bucketName }} --region ${{ inputs.region }}
