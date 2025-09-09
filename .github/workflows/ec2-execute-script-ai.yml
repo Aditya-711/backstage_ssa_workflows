@@ -1,0 +1,1 @@
+name: ec2-execute-script-ai\non:\n  workflow_dispatch:\n    inputs:\n      resourceName:\n        description: "Resource Name"\n        required: true\n        type: string\njobs:\n  provision:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Provision Resource\n        run: echo "Provisioning ${{ github.event.inputs.resourceName }}"
