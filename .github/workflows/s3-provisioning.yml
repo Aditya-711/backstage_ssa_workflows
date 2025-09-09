@@ -1,0 +1,29 @@
+name: Create S3 Bucket
+on: workflow_dispatch
+inputs:
+  bucketName:
+    description: 'Name of the S3 bucket'
+    required: true
+    type: string
+  region:
+    description: 'AWS Region'
+    required: true
+    type: string
+jobs:
+  create-s3-bucket:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.region }}
+      - name: Create S3 Bucket
+        run: | 
+          aws s3api create-bucket \ 
+            --bucket ${{ inputs.bucketName }} \ 
+            --create-bucket-configuration LocationConstraint=${{ inputs.region }} 
+          echo "S3 bucket '${{ inputs.bucketName }}' created successfully in region '${{ inputs.region }}'" 
