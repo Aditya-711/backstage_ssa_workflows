@@ -1,28 +1,58 @@
-name: S3 Provisioning Workflow
+name: Create S3 Bucket
 on:
   workflow_dispatch:
     inputs:
       bucketName:
-        description: "Bucket name"
+        description: 'Name of the S3 bucket'
         required: true
         type: string
       region:
-        description: "AWS Region"
+        description: 'AWS region'
         required: true
         type: string
+        default: 'us-east-1'
+
 jobs:
-  provision:
+  create-s3:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Set AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+
+      - name: Print inputs
+        run: |
+           echo "\u26BD Bucket Name: ${{ inputs.bucketName }}"
+           echo "\U0001F310 Region: ${{ inputs.region }}"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ inputs.region }}
-      - name: Create S3 Bucket
-        run: aws s3api create-bucket --bucket ${{ inputs.bucketName }} --region ${{ inputs.region }} --create-bucket-configuration LocationConstraint=${{ inputs.region }}
-      - name: Output Bucket Name
-        run: echo "S3 Bucket ${{ inputs.bucketName }} created successfully in region ${{ inputs.region }}"
+          aws-region: ${{ github.event.inputs.region }}
+
+      - name: Create S3 bucket
+        run: |
+          echo "Creating S3 bucket: ${{ inputs.bucketName }} in region: ${{ inputs.region }}"
+          
+          # Create the bucket
+          if [ "${{ inputs.region }}" = "us-east-1" ]; then
+            # Special case for us-east-1 as it doesn't accept LocationConstraint
+            aws s3api create-bucket               --bucket ${{ inputs.bucketName }}               --region ${{ inputs.region }}
+          else
+            # For all other regions
+            aws s3api create-bucket               --bucket ${{ inputs.bucketName }}               --region ${{ inputs.region }}               --create-bucket-configuration LocationConstraint=${{ inputs.region }}
+          fi
+
+          # Enable versioning
+          aws s3api put-bucket-versioning             --bucket ${{ inputs.bucketName }}             --versioning-configuration Status=Enabled
+
+          # Block public access
+          aws s3api put-public-access-block             --bucket ${{ inputs.bucketName }}             --public-access-block-configuration               "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
+
+          echo "\u2705 S3 bucket created successfully with versioning enabled and public access blocked"
+          echo "Bucket ARN: arn:aws:s3:::${{ inputs.bucketName }}"
