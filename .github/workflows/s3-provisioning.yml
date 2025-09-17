@@ -1,0 +1,43 @@
+name: S3 Bucket Provisioning
+'on':
+  workflow_dispatch:
+    inputs:
+      bucketName:
+        description: Name of the S3 bucket
+        required: true
+        type: string
+      region:
+        description: AWS region
+        required: true
+        type: string
+        default: us-east-1
+jobs:
+  create-s3-bucket:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.region }}
+      - name: Create S3 bucket
+        id: create_bucket
+        run: >
+          echo "Creating S3 bucket: ${{ inputs.bucketName }} in region ${{ inputs.region }}"
+
+          aws s3api create-bucket --bucket ${{ inputs.bucketName }} --region ${{ inputs.region }}
+          --create-bucket-configuration LocationConstraint=${{ inputs.region }}
+        continue-on-error: true
+      - name: Check for LocationConstraint error
+        if: steps.create_bucket.outcome == 'failure'
+        run: |
+          if [[ $(echo "${{ steps.create_bucket.result }}" | grep -c "LocationConstraint") -gt 0 ]]; then
+            echo "LocationConstraint error detected. Retrying without LocationConstraint."
+            aws s3api create-bucket --bucket ${{ inputs.bucketName }} --region ${{ inputs.region }}
+          else
+            echo "An unexpected error occurred."
+            exit 1
+          fi
